@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 
-import { getAllMiners, addMiner, deleteMinerById } from "../services/minersService"
+import { getAllMiners, getMinerById, addMiner, deleteMinerById } from "../services/minersService"
 
 export const getMiners = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -14,6 +14,29 @@ export const getMiners = async (req: Request, res: Response): Promise<void> => {
     } catch (error) {
         res.status(500).json({
             message: "Failed to fetch miners",
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
+
+export const getMiner = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const miner = await getMinerById(Number(req.params.id))
+
+        if (!miner) {
+            res.status(404).json({
+                message: "Miner not found",
+            })
+            return
+        }
+        
+        res.status(200).json({
+            data: miner,
+            message: "Miner fetched successfully",
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch miner",
             error: error instanceof Error ? error.message : String(error),
         })
     }

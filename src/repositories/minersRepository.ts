@@ -17,8 +17,17 @@ export class MinersRepository {
             [id]
         )
 
-        const miners = rows as Miner[];
-        return miners.length > 0 ? miners[0] : null;
+        const miners = rows as Miner[]
+        return miners.length > 0 ? miners[0] : null
+    }
+
+    findByRarityAndName = async (rarity: string, name: string): Promise<Miner[]> => {
+        const [rows] = await pool.query(
+            `SELECT * FROM miners WHERE rarity = ? AND name = ?`,
+            [rarity, name]
+        )
+
+        return rows as Miner[]
     }
 
     create = async (data: Partial<Miner>): Promise<number> => {
