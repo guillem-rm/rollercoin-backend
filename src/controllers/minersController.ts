@@ -45,6 +45,7 @@ export const getMiner = async (req: Request, res: Response): Promise<void> => {
 export const createMiner = async (req: Request, res: Response): Promise<void> => {
     try {
         const miner = await addMiner(req.body)
+
         res.status(201).json({
             data: miner,
             message: "Miner created successfully",
@@ -60,6 +61,7 @@ export const createMiner = async (req: Request, res: Response): Promise<void> =>
 export const deleteMiner = async (req: Request, res: Response): Promise<void> => {
     try {
         await deleteMinerById(Number(req.params.id))
+        
         res.status(200).json({
             message: "Miner deleted successfully",
         })

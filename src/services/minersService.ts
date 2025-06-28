@@ -1,5 +1,5 @@
 import { MinersRepository } from "../repositories/minersRepository"
-import { downloadMinerGif } from "../utils/downloadMinerGif"
+import { downloadMinerGif } from "../utils/miner"
 
 const minersRepository = new MinersRepository()
 

@@ -8,7 +8,8 @@ const streamPipeline = promisify(pipeline)
 
 export async function downloadMinerGif(url: string, minerName: string) {
     try {
-        const filename = `${minerName.replace(/\s+/g, "_")}.gif`
+        const minerNameNormalized = normalizeMinerName(minerName)
+        const filename = `${minerNameNormalized}.gif`
         const savePath = path.resolve(__dirname, "../../public/miners", filename)
 
         if (existsSync(savePath)) return
@@ -21,4 +22,10 @@ export async function downloadMinerGif(url: string, minerName: string) {
     } catch (err) {
         console.error("Error downloading gif:", err)
     }
+}
+
+export function normalizeMinerName(name: string): string {
+    return name
+        .replace(/\s+/g, "_")
+        .trim()
 }
