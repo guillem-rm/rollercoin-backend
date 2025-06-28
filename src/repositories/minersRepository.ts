@@ -31,11 +31,11 @@ export class MinersRepository {
     }
 
     create = async (data: Partial<Miner>): Promise<number> => {
-        const { rarity, name, description, cells, power, bonus, price } = data
+        const { rarity, name, description, cells, power, bonus, price, sellable, mergeable } = data
 
         const [result] = await pool.query(
-            `INSERT INTO miners (rarity, name, description, cells, power, bonus, price) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [rarity, name, description, cells, power, bonus, price]
+            `INSERT INTO miners (rarity, name, description, cells, power, bonus, price, sellable, mergeable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [rarity, name, description, cells, power, bonus, price, sellable, mergeable]
         );
 
         return (result as any).insertId
