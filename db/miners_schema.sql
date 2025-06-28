@@ -4,7 +4,7 @@ CREATE TABLE miners (
     name VARCHAR(50) NOT NULL,
     description TEXT,
     cells INT NOT NULL DEFAULT 2,
-    power INT NOT NULL DEFAULT 0,
+    power BIGINT NOT NULL DEFAULT 0,
     bonus FLOAT NOT NULL DEFAULT 0.0,
     price FLOAT NOT NULL DEFAULT 0.0,
     sellable BOOLEAN NOT NULL DEFAULT TRUE,

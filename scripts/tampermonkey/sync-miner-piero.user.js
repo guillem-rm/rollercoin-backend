@@ -6,6 +6,7 @@
 // @author       You
 // @match        https://minaryganar.com/miner/*
 // @exclude      https://minaryganar.com/miner/
+// @exclude      https://minaryganar.com/miner/page/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=minaryganar.com
 // @grant        GM_xmlhttpRequest
 // @connect      localhost
@@ -14,12 +15,23 @@
 (function () {
     'use strict';
 
+    let notificationContainer = document.getElementById("notification-container");
+    if (!notificationContainer) {
+        notificationContainer = document.createElement("div");
+        notificationContainer.id = "notification-container";
+        notificationContainer.style.position = "fixed";
+        notificationContainer.style.top = "20px";
+        notificationContainer.style.right = "40vw";
+        notificationContainer.style.display = "flex";
+        notificationContainer.style.flexDirection = "column";
+        notificationContainer.style.gap = "10px";
+        notificationContainer.style.zIndex = "9999";
+        document.body.appendChild(notificationContainer);
+    }
+
     function showNotification(message, success = true) {
         const notification = document.createElement("div");
         notification.innerText = message;
-        notification.style.position = "fixed";
-        notification.style.top = "20px";
-        notification.style.right = "40vw";
         notification.style.padding = "14px 24px";
         notification.style.fontSize = "16px";
         notification.style.fontWeight = "600";
@@ -27,13 +39,14 @@
         notification.style.color = "white";
         notification.style.borderRadius = "10px";
         notification.style.boxShadow = "0 6px 16px rgba(0,0,0,0.4)";
-        notification.style.zIndex = "9999";
         notification.style.opacity = "1";
         notification.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-        notification.style.background =
-            success ? "linear-gradient(135deg, #22c55e, #15803d)" : "linear-gradient(135deg, #f43f5e, #991b1b)";
+        notification.style.background = success
+            ? "linear-gradient(135deg, #22c55e, #15803d)"
+            : "linear-gradient(135deg, #f43f5e, #991b1b)";
         notification.style.transform = "translateY(0)";
-        document.body.appendChild(notification);
+
+        notificationContainer.appendChild(notification);
 
         setTimeout(() => {
             notification.style.opacity = "0";
@@ -76,14 +89,10 @@
             data: JSON.stringify(miner),
             onload: function (response) {
                 if (response.status >= 200 && response.status < 300) {
-                    showNotification("Miner sincronitzat correctament!");
+                    showNotification("Miner sincronitzat correctament! (" + rarity + ")");
                 } else {
-                    showNotification("Error de sincronització (" + response.status + ")", false);
+                    showNotification("Error de sincronització (" + rarity + ")", false);
                 }
-
-                // Notificar la finestra pare que ja ha acabat
-                window.opener?.postMessage("sync-completed", "*");
-                window.close();
             },
             onerror: function (error) {
                 console.error("Error with miner " + name + ": ", error);
@@ -93,6 +102,66 @@
                 window.close();
             }
         });
+
+        const rarities = document.querySelectorAll('tbody[class^="brxe"]');
+
+        for (let r = 0; r < rarities.length; r++) {
+            const minerData = rarities[r].querySelectorAll("tr td");
+
+            if (minerData.length === 0) {
+                if (r == rarities.length - 1) {
+                    window.opener?.postMessage("sync-completed", "*");
+                    window.close();
+                    return;
+                } else continue;
+            };
+
+            let rarity = minerData[0].getAttribute("id").split("-")[1].toUpperCase();
+            let power = parseFloat(minerData[6].innerText.split(" ")[0]) * 1000;
+            let bonus = parseFloat(minerData[7].innerText.split(" ")[0]);
+
+            miner = {
+                rarity: rarity,
+                name: name.trim(),
+                description: description,
+                gifUrl: gifUrl,
+                cells: cells,
+                power: power,
+                bonus: bonus,
+                price: price,
+                sellable: sellable,
+                mergeable: mergeable,
+            };
+
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "http://localhost:3000/miners",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                data: JSON.stringify(miner),
+                onload: function (response) {
+                    if (response.status >= 200 && response.status < 300) {
+                    showNotification("Miner sincronitzat correctament! (" + rarity + ")");
+                    } else {
+                        showNotification("Error de sincronització (" + rarity + ")", false);
+                    }
+
+                    // Notificar la finestra pare que ja ha acabat
+                    if (r == rarities.length - 1) {
+                        window.opener?.postMessage("sync-completed", "*");
+                        window.close();
+                    }
+                },
+                onerror: function (error) {
+                    console.error("Error with miner " + name + ": ", error);
+                    showNotification("Error de connexió amb el servidor", false);
+
+                    window.opener?.postMessage("sync-completed", "*");
+                    window.close();
+                }
+            });
+        }
     }
 
     const urlParams = new URLSearchParams(window.location.search);

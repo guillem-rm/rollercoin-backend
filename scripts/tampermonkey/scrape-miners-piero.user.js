@@ -5,6 +5,7 @@
 // @description  Scrap miners one by one
 // @author       You
 // @match        https://minaryganar.com/miner/
+// @match        https://minaryganar.com/miner/?*
 // @match        https://minaryganar.com/miner/page/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=minaryganar.com
 // @grant        none
@@ -39,30 +40,24 @@
         text.innerText = "Scraping...";
 
         try {
-            await wait(1000);
+            const miners = document.querySelectorAll(".brxe-gzrnkg");
 
-            const pageNumbers = document.querySelector(".page-numbers")?.children;
-            let maxPages = 1;
-
-            if (pageNumbers && pageNumbers.length > 2) {
-                //maxPages = parseInt(pageNumbers[pageNumbers.length - 2].innerText);
-            }
-
-            for (let actPage = 1; actPage <= maxPages; actPage++) {
-                await wait(1000);
-                const miners = document.querySelectorAll(".brxe-gzrnkg");
-
-                for (let i = 0; i < miners.length; i++) {
-                    const href = miners[i]?.querySelector(".brxe-fxbrin")?.href;
-                    if (href) {
-                        await waitForSyncCompletion(href);
-                        await wait(1000); // per seguretat
-                    }
+            for (let i = 0; i < miners.length; i++) {
+                const href = miners[i]?.querySelector(".brxe-fxbrin")?.href;
+                if (href) {
+                    await waitForSyncCompletion(href);
+                    await wait(1000); // per seguretat
                 }
             }
 
+            const pageBtns = document.querySelectorAll(".page-numbers li");
+            const nextPage = pageBtns[pageBtns.length - 1].querySelector("a");
+            if (nextPage) {
+                const href = nextPage.href;
+                window.open(`${href}?sync=true`, "_self");
+            }
         } catch (error) {
-            console.error("❌ Error durant el scraping:", error);
+            console.error("Error durant el scraping:", error);
             alert("Hi ha hagut un error durant el scraping.");
         }
 
@@ -107,4 +102,10 @@
 
     document.body.appendChild(syncButton);
     syncButton.addEventListener("click", scrapMiners);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const sync = urlParams.get("sync");
+    if (sync) {
+        scrapMiners();
+    }
 })();
