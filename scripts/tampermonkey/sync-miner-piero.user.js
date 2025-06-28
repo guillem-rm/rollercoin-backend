@@ -98,6 +98,42 @@
     const urlParams = new URLSearchParams(window.location.search);
     const sync = urlParams.get("sync");
     if (sync) {
-        setTimeout(syncMiner, 2000);
+        syncMiner();
     }
+
+    let syncButton = document.createElement("button");
+    syncButton.innerHTML = "<p style='margin-bottom: 0'>Sync miner</p>";
+    syncButton.id = "scrapMinerButton";
+    syncButton.style.display = "flex";
+    syncButton.style.alignItems = "center";
+    syncButton.style.gap = "10px";
+    syncButton.style.position = "fixed";
+    syncButton.style.bottom = "20px";
+    syncButton.style.right = "20px";
+    syncButton.style.background = "linear-gradient(135deg, #f97316, #dc2626)";
+    syncButton.style.color = "white";
+    syncButton.style.border = "none";
+    syncButton.style.padding = "12px 24px";
+    syncButton.style.fontSize = "20px";
+    syncButton.style.fontWeight = "600";
+    syncButton.style.letterSpacing = "0.5px";
+    syncButton.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.5)";
+    syncButton.style.borderRadius = "12px";
+    syncButton.style.zIndex = "9999";
+    syncButton.style.transition = "all 0.3s ease";
+    syncButton.style.fontFamily = "Segoe UI, Roboto, sans-serif";
+    syncButton.style.opacity = "0.95";
+
+    syncButton.addEventListener("mouseenter", () => {
+        syncButton.style.transform = "translateY(-2px)";
+        syncButton.style.boxShadow = "0 12px 32px rgba(0, 0, 0, 1)";
+    });
+
+    syncButton.addEventListener("mouseleave", () => {
+        syncButton.style.transform = "none";
+        syncButton.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.5)";
+    });
+
+    document.body.appendChild(syncButton);
+    syncButton.addEventListener("click", syncMiner);
 })();
