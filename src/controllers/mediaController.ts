@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import path from "path"
+
 import { normalizeMinerName } from "../utils/miner"
 
 export const getMinerGif = async (req: Request, res: Response): Promise<void> => {
@@ -22,6 +23,31 @@ export const getMinerGif = async (req: Request, res: Response): Promise<void> =>
     } catch (error) {
         res.status(500).json({
             message: "Failed to fetch miner GIF",
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
+
+export const getRarityImg = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { type } = req.query
+
+        if (!type || typeof type !== "string") {
+            res.status(400).send("Rarity type is required")
+        }
+
+        const rarity = (type as string).toUpperCase()
+        const filename = `${rarity}.png`
+        const imgPath = path.join(__dirname, "../../public/rarities", filename as string)
+
+        res.sendFile(imgPath, (err) => {
+            if (err) {
+                res.status(404).send("Rarity not found")
+            }
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch rarity",
             error: error instanceof Error ? error.message : String(error),
         })
     }
