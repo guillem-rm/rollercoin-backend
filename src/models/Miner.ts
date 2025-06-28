@@ -7,5 +7,7 @@ export interface Miner {
     power: number
     bonus: number
     price: number
+    sellable: boolean
+    mergeable: boolean
     created_at: Date
 }
