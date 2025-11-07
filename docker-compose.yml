@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8
+    container_name: rollercoin-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: rollerdb
+      MYSQL_USER: rollercoin
+      MYSQL_PASSWORD: rollerpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - rollercoin-db-data:/var/lib/mysql
+
+volumes:
+  rollercoin-db-data:
