@@ -1,17 +1,16 @@
 services:
-  db:
-    image: mysql:8
-    container_name: rollercoin-db
+  mongo:
+    image: mongo:7
+    container_name: rollercoin-mongo
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: rollerdb
-      MYSQL_USER: rollercoin
-      MYSQL_PASSWORD: rollerpass
+      MONGO_INITDB_ROOT_USERNAME: rollercoin
+      MONGO_INITDB_ROOT_PASSWORD: rollerpass
+      MONGO_INITDB_DATABASE: rollerdb
     ports:
-      - "3306:3306"
+      - "27017:27017"
     volumes:
-      - rollercoin-db-data:/var/lib/mysql
+      - mongo-data:/data/db
 
 volumes:
-  rollercoin-db-data:
+  mongo-data:
