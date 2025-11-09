@@ -112,6 +112,8 @@ export const startMinerScraper = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Miner scraper is already running" });
         }
 
+        const maxPages = req.body.maxPages || 1000;
+
         logger.info("Starting miner scraper");
 
         // Initialize scraper state
@@ -119,7 +121,7 @@ export const startMinerScraper = async (req: Request, res: Response) => {
         scraperState.progress = 0;
 
         // Call the scraper function
-        scrapeMiners(scraperState)
+        scrapeMiners(scraperState, maxPages)
             .then(() => {
                 scraperState.running = false;
             })

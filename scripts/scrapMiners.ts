@@ -33,7 +33,7 @@ const PAGE_DELAY = 500;
  * 
  * @param scraperState The state object to track scraping progress.
  */
-export const scrapeMiners = async (scraperState: ScraperState) => {
+export const scrapeMiners = async (scraperState: ScraperState, maxPages: number) => {
     logger.info("Miner scraper started");
 
     // Launch browser
@@ -53,7 +53,7 @@ export const scrapeMiners = async (scraperState: ScraperState) => {
         await page.goto(START_URL, { waitUntil: "networkidle2" });
 
         // Extract max page number from pagination
-        const maxPages = await page.evaluate(() => {
+        const totalPages = await page.evaluate(() => {
             const DOC_PAGINATION_SELECTOR = ".page-numbers";
 
             const pageLinks = Array.from(document.querySelectorAll(DOC_PAGINATION_SELECTOR))
@@ -63,8 +63,10 @@ export const scrapeMiners = async (scraperState: ScraperState) => {
         });
 
         // Update scraper state
+        maxPages = totalPages < maxPages ? totalPages : maxPages;
         scraperState.totalPages = maxPages;
-        logger.info(`Total pages found: ${maxPages}`);
+        logger.info(`Total pages found: ${totalPages}`);
+        logger.info(`Starting to scrape up to ${maxPages} pages`);
 
         // Loop through each page
         for (let pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
