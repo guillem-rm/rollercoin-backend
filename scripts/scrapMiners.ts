@@ -17,12 +17,14 @@ import pLimit from "p-limit";
 import logger from "../src/utils/logger.js";
 import { wait } from "../src/helpers/time.js";
 import type { ScraperState } from "../src/models/ScraperState.js";
+import { MinerCategory } from "../src/types/enums.js";
+import * as minerService from "../src/services/minerService.js";
 
 const BASE = "https://minaryganar.com";
 const START_URL = `${BASE}/miner/`;
 
 // Concurrency for detail pages
-const CONCURRENCY = 3;
+const CONCURRENCY = 5;
 // Delay between page requests (ms)
 const PAGE_DELAY = 500;
 
@@ -32,7 +34,7 @@ const PAGE_DELAY = 500;
  * @param scraperState The state object to track scraping progress.
  */
 export const scrapeMiners = async (scraperState: ScraperState) => {
-    logger.info("Starting scraper of miners...");
+    logger.info("Miner scraper started");
 
     // Launch browser
     const browser = await puppeteer.launch({
@@ -45,8 +47,6 @@ export const scrapeMiners = async (scraperState: ScraperState) => {
     const page = await browser.newPage();
     logger.debug("New page opened");
 
-    let pageIndex = 1;
-
     try {
         // Visit the first page
         logger.info(`Visiting first page: ${START_URL}`);
@@ -54,22 +54,105 @@ export const scrapeMiners = async (scraperState: ScraperState) => {
 
         // Extract max page number from pagination
         const maxPages = await page.evaluate(() => {
-            const pageLinks = Array.from(document.querySelectorAll(".page-numbers"))
+            const DOC_PAGINATION_SELECTOR = ".page-numbers";
+
+            const pageLinks = Array.from(document.querySelectorAll(DOC_PAGINATION_SELECTOR))
                 .map(el => parseInt(el.textContent || "0"))
                 .filter(n => !isNaN(n));
             return Math.max(...pageLinks);
         });
 
+        // Update scraper state
         scraperState.totalPages = maxPages;
         logger.info(`Total pages found: ${maxPages}`);
 
+        // Loop through each page
         for (let pageIndex = 1; pageIndex <= maxPages; pageIndex++) {
+            // Construct page URL
             const url = pageIndex === 1 ? START_URL : `${START_URL}page/${pageIndex}/`;
             logger.debug(`Visiting list page: ${url}`);
 
-            // Aquí faràs la captura dels miners de la pàgina
+            // Visit page and extract miner links
+            const minersURLs = Array.from(await page.goto(url, { waitUntil: "networkidle2" })
+                .then(() => page.evaluate(() => {
+                    const DOC_MINER_URLS_SELECTOR = ".jet-listing.jet-listing-dynamic-image a";
 
+                    return Array.from(document.querySelectorAll(DOC_MINER_URLS_SELECTOR))
+                        .map(el => el.getAttribute("href") || "")
+                        .filter(href => href.startsWith("http"));
+                })));
+
+            logger.debug(`Found ${minersURLs.length} miner links on page ${pageIndex}`);
+
+            // Visit each miner page with concurrency limit
+            const limit = pLimit(CONCURRENCY);
+            const minerPromises = minersURLs.map(minerURL => limit(async () => {
+                // Visit miner page
+                logger.debug(`Visiting miner page: ${minerURL}`);
+                const minerPage = await browser.newPage();
+                await minerPage.goto(minerURL, { waitUntil: "networkidle2" });
+                
+                // Extract miner data
+                const minerData = await minerPage.evaluate((minerCategoryValues) => {
+                    // Selectors
+                    const DOC_MINER_NAME_SELECTOR = "#brxe-ooaqmp";
+                    const DOC_MINER_IMAGE_SELECTOR = "#brxe-lbeflu";
+                    const DOC_MINER_CELLS_SELECTOR = "#brxe-upgtjw";
+                    const DOC_MINER_SELLABLE_SELECTOR = "#brxe-yxkmxp div span";
+                    const DOC_MINER_MERGEABLE_SELECTOR = "#brxe-dzzqum div span";
+                    const DOC_MINER_POWER_SELECTOR = "-pwr";
+                    const DOC_MINER_BONUS_SELECTOR = "-bonus";
+
+                    // Extract common fields
+                    const name = document.querySelector(DOC_MINER_NAME_SELECTOR)?.textContent?.trim() || "";
+                    const imageUrl = (document.querySelector(DOC_MINER_IMAGE_SELECTOR) as HTMLImageElement)?.src || "";
+                    const cells = (Number(document.querySelector(DOC_MINER_CELLS_SELECTOR)?.textContent?.split(" ")[1]) || 2) as 1 | 2;
+                    const sellable = document.querySelector(DOC_MINER_SELLABLE_SELECTOR)?.textContent?.trim() === "Sellable" || document.querySelector(DOC_MINER_MERGEABLE_SELECTOR)?.textContent?.trim() === "Sellable" ? true : false;
+                    const mergeable = document.querySelector(DOC_MINER_SELLABLE_SELECTOR)?.textContent?.trim() === "Mergeable" || document.querySelector(DOC_MINER_MERGEABLE_SELECTOR)?.textContent?.trim() === "Mergeable" ? true : false;
+
+                    // Extract category-specific fields
+                    const categories: Record<string, any> = {};
+                    minerCategoryValues.forEach(cat => {
+                        // Skip legacy category
+                        if (cat === "legacy") return;
+
+                        const category = cat === "common" ? "basic" : cat;
+
+                        // Extract power and bonus
+                        const powerEl = document.querySelector(`#${category}${DOC_MINER_POWER_SELECTOR}`);
+                        const bonusEl = document.querySelector(`#${category}${DOC_MINER_BONUS_SELECTOR}`);
+                        if (powerEl || bonusEl) {
+                            const power = powerEl ? Number(powerEl.textContent?.split(" ")[0]) * 1000 : 0;
+                            const bonus = bonusEl ? Number(bonusEl.textContent?.split(" ")[0]) : 0;
+
+                            categories[cat] = { power, bonus };
+                        }
+                    });
+
+                    return { name, imageUrl, cells, sellable, mergeable, categories };
+                }, Object.values(MinerCategory));
+
+                try {
+                    // Save miner data to database
+                    const savedMiner = await minerService.upsertMiner(minerData);
+                    if (!savedMiner) logger.warn(`Miner not saved: ${minerData.name}`);
+                    else logger.info(`Miner saved: ${savedMiner.name}`);
+                } 
+                catch (error) {
+                    logger.error(`Error saving miner ${minerData.name}:`, error);
+                }
+
+                // Close miner page
+                await minerPage.close();
+            }));
+
+            // Wait for all miners on the page to be processed
+            await Promise.all(minerPromises);
+
+            // Update scraper state progress
             scraperState.progress = Math.round((pageIndex / maxPages) * 100);
+
+            // Delay before next page
             await wait(PAGE_DELAY);
         }
 

@@ -117,7 +117,6 @@ export const startMinerScraper = async (req: Request, res: Response) => {
         // Initialize scraper state
         scraperState.running = true;
         scraperState.progress = 0;
-        scraperState.miners = [];
 
         // Call the scraper function
         scrapeMiners(scraperState)
