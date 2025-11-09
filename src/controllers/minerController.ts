@@ -3,6 +3,8 @@ import type { Request, Response } from "express";
 import logger from "../utils/logger.js";
 import * as minerService from "../services/minerService.js";
 import { formatValidationError } from "../utils/handleValidationError.js";
+import { scraperState } from "../models/ScraperState.js";
+import { scrapeMiners } from "../../scripts/scrapMiners.js";
 
 /**
  * Controller to get all miners.
@@ -95,4 +97,54 @@ export const deleteMiner = async (req: Request, res: Response) => {
         logger.error(`Error deleting miner: ${error}`);
         res.status(500).json({ error: "Error deleting miner" });
     }
+}
+
+/**
+ * Controller to start miner's scrape process.
+ * 
+ * @param req Express request object.
+ * @param res Express response object.
+ * @throws Error (HTTP 500) if there is an issue starting the scrape process.
+ */
+export const startMinerScraper = async (req: Request, res: Response) => {
+    try {
+        if (scraperState.running) {
+            return res.status(400).json({ message: "Miner scraper is already running" });
+        }
+
+        logger.info("Starting miner scraper");
+
+        // Initialize scraper state
+        scraperState.running = true;
+        scraperState.progress = 0;
+
+        // Call the scraper function
+        scrapeMiners(scraperState)
+            .then(() => {
+                scraperState.running = false;
+            })
+            .catch((err) => {
+                console.error(err);
+                scraperState.running = false;
+            });
+
+        res.status(202).json({ message: "Miner scraper started" });
+    } 
+    catch (error) {
+        logger.error(`Error during miner scraping process: ${error}`);
+        res.status(500).json({ error: "Error during miner scraping process" });
+    }
+}
+
+/**
+ * Controller to get miner's scrape process status.
+ * 
+ * @param req Express request object.
+ * @param res Express response object.
+ * @returns JSON response with the process status.
+ */
+export const getScraperStatus = (req: Request, res: Response) => {
+    logger.info("Fetching miner scraper status");
+
+    res.json(scraperState);
 }

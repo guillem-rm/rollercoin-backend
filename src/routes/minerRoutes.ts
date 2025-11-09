@@ -22,4 +22,16 @@ router.post("/", minerController.createMiner);
  */
 router.delete("/:id", minerController.deleteMiner);
 
+/**
+ * @route POST /miners/scrap
+ * @desc Triggers the miner scraping process.
+ */
+router.post("/scrape", minerController.startMinerScraper);
+
+/**
+ * @route GET /miners/scrape/status
+ * @desc Gets the status of the miner scraping process.
+ */
+router.get("/scrape/status", minerController.getScraperStatus);
+
 export default router;

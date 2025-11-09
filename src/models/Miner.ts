@@ -2,14 +2,15 @@ import { Schema, model, Document } from "mongoose";
 
 import { MinerCategory } from "../types/enums.js";
 
-interface Category {
+export interface Category {
     power: number;
     bonus: number;
-    price: number;
+    price?: number;
 }
 
 export interface MinerDocument extends Document {
     name: string;
+    imageUrl?: string;
     cells: 1 | 2;
     sellable: boolean;
     mergeable: boolean;
@@ -24,6 +25,7 @@ const CategorySchema = new Schema<Category>({
 
 const MinerSchema = new Schema<MinerDocument>({
     name: { type: String, required: true },
+    imageUrl: { type: String },
     cells: { type: Number, required: true },
     sellable: { type: Boolean, required: true },
     mergeable: { type: Boolean, required: true },

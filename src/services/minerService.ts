@@ -1,5 +1,5 @@
 import logger from "../utils/logger.js";
-import { Miner } from "../models/Miner.js";
+import { Miner, type MinerDocument } from "../models/Miner.js";
 
 /**
  * Service to get all miners from the database.
@@ -32,6 +32,29 @@ export const createMiner = async (minerData: typeof Miner) => {
     else logger.debug(`New miner created with ID: ${newMiner._id}`);
 
     return newMiner;
+}
+
+/**
+ * Service to create or update a miner in the database.
+ * If a miner with the same name exists, it will be updated.
+ * Otherwise, a new miner will be created.
+ * 
+ * @param minerData Data for the miner
+ * @returns The created or updated miner
+ */
+export const upsertMiner = async (minerData: Partial<MinerDocument>) => {
+    logger.debug(`Upserting miner with data: ${JSON.stringify(minerData)}`);
+
+    // Upsert the miner
+    const miner = await Miner.findOneAndUpdate(
+        { name: minerData.name },
+        minerData,
+        { upsert: true, new: true, runValidators: true }
+    );
+    if (!miner) logger.debug(`Failed to upsert miner: ${JSON.stringify(minerData)}`);
+    else logger.debug(`Miner upserted with ID: ${miner._id}`);
+
+    return miner;
 }
 
 /**
