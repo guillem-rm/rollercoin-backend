@@ -12,7 +12,7 @@ const logFormat = printf(({ level, message, timestamp }) => {
  * Logs messages to both console and a file with timestamps and colorization.
  */
 const logger = createLogger({
-    level: "info",
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
     format: combine(
         timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
         logFormat

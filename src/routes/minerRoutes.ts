@@ -16,4 +16,10 @@ router.get("/", minerController.getAllMiners);
  */
 router.post("/", minerController.createMiner);
 
+/**
+ * @route DELETE /miners/:id
+ * @desc Deletes a miner.
+ */
+router.delete("/:id", minerController.deleteMiner);
+
 export default router;
