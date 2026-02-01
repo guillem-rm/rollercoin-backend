@@ -18,6 +18,25 @@ export const getAllMiners = async () => {
 }
 
 /**
+ * Service to get miners by name from the database.
+ * 
+ * @param minerName Name of the miner
+ * @returns Array of the miners
+ */
+export const getMinersByName = async (minerName?: string) => {
+    logger.debug(`Fetching miners from DB with name: ${minerName}`);
+
+    // Fetch miners
+    const miners = await Miner.find({
+        name: { $regex: minerName, $options: "i" }
+    });
+    if (!miners) logger.debug(`No miners found in DB with name: ${minerName}`);
+    else logger.debug(`Found ${miners.length} miners in DB with name: ${minerName}`);
+
+    return miners;
+}
+
+/**
  * Service to create a new miner in the database.
  * 
  * @param minerData Data for the new miner

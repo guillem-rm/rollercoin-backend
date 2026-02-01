@@ -11,6 +11,12 @@ const router = Router();
 router.get("/", minerController.getAllMiners);
 
 /**
+ * @route GET /miners/name/:name
+ * @desc Get miners by name.
+ */
+router.get("/name/:name", minerController.getMinersByName);
+
+/**
  * @route POST /miners
  * @desc Create a new miner.
  */

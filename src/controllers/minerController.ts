@@ -31,6 +31,32 @@ export const getAllMiners = async (req: Request, res: Response) => {
 }
 
 /**
+ * Controller to get miners by name.
+ * 
+ * @param req Express request object.
+ * @param res Express response object.
+ * @returns JSON response with the miners.
+ * @throws Error (HTTP 500) if there is an issue fetching miners.
+ */
+export const getMinersByName = async (req: Request, res: Response) => {
+    try {
+        // Get miner name from request parameters
+        const { name } = req.params;
+        logger.info(`Fetching miners with name: ${name}`);
+
+        // Call service to find miners
+        const miners = await minerService.getMinersByName(name);
+        logger.info(`Fetched ${miners.length} miners`);
+
+        res.json(miners);
+    } 
+    catch (error) {
+        logger.error(`Error fetching miners by name: ${error}`);
+        res.status(500).json({ error: "Error getting miners by name" });
+    }
+}
+
+/**
  * Controller to create a new miner.
  * 
  * @param req Express request object.
