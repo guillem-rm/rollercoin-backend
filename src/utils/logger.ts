@@ -4,7 +4,7 @@ const { combine, timestamp, printf, colorize } = format;
 
 // Custom log format: displays timestamp, log level, and message
 const logFormat = printf(({ level, message, timestamp }) => {
-    return `${timestamp} [${level}]: ${message}`;
+    return `${timestamp} [${level}] ${message}`;
 });
 
 /**
